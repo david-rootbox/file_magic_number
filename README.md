@@ -17,18 +17,6 @@ Alcance: identifica tipos probables; no garantiza validez completa ni seguridad.
 
 En este ejemplo, `imagen.php` contiene un PNG real renombrado. El nombre no modifica la identificación.
 
-## Qué cambia en la versión 2
-
-- **Siempre compara las firmas**, aunque libmagic ya haya identificado el MIME.
-- Incorpora una base local de **259 reglas para 201 familias** derivada de [TheDiscordian/magic-bytes](https://github.com/TheDiscordian/magic-bytes), con su licencia MIT, revisión y hashes de procedencia.
-- Comprueba posiciones absolutas, offsets desde el final y bytes variables. No se limita al byte cero ni a los primeros 32 bytes.
-- Expone el MIME, los patrones coincidentes y su posición incluso en el modo normal.
-- Distingue concordancia, evidencia parcial, ambigüedad y contradicción.
-- Trata ZIP, OLE/CFB, EBML, ar e ISO BMFF como **familias o contenedores**. La firma por sí sola no identifica necesariamente su subtipo.
-- Evita convertir marcadores de un byte, relleno de ceros o marcas de codificación en una identificación de formato. Las firmas cortas conservadas solo aportan evidencia parcial.
-- Añade comprobaciones básicas de apertura/cierre para PNG y del cierre EOI para JPEG. No realiza una validación completa de esas imágenes.
-- Incluye **35 pruebas de regresión** reproducibles.
-
 ## Instalación
 
 Necesitas **Linux, Bash 4.4 o superior, file/libmagic y GNU Coreutils**. La ejecución normal no requiere Python, Node, acceso a Internet ni subir archivos a servidores.
