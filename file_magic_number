@@ -1,206 +1,228 @@
 #!/usr/bin/env bash
-# Identifica archivos por contenido con libmagic y firmas de cabecera.
-# Dependencias: Bash, file (libmagic), od y tr. No necesita Internet.
-# Referencia de file: https://github.com/file/file/blob/master/doc/file.man
-# Firmas: https://www.garykessler.net/library/file_sigs_GCK_latest.html
-# Una firma reconocida no valida todo el archivo ni determina su seguridad.
-
+# Cross-check libmagic with an independent, offline signature dataset.
+# The dataset and its MIT license live in data/. No network requests or eval.
 set -u
 set -o pipefail
 export LC_ALL=C
 
+fail() { printf 'Error: %s\n' "$*" >&2; exit 2; }
 usage() {
     cat <<EOF
 Uso: ${0##*/} [-v|--verbose] [--] ARCHIVO
 
-Identifica el contenido sin confiar en la extensión del nombre.
+Contrasta SIEMPRE el MIME de file/libmagic con una base independiente de
+magic numbers. Comprueba offsets y comodines; no confía en el nombre.
 
-  -v, --verbose  Muestra MIME, descripción y los primeros 32 bytes.
+  -v, --verbose  Muestra todas las coincidencias y los primeros 32 bytes.
   -h, --help     Muestra esta ayuda.
-  --             Termina las opciones; permite nombres que empiezan por '-'.
+  --version     Muestra la versión.
+  --            Permite nombres que empiezan por '-'.
 
 Ejemplos:
-  ./${0##*/} imagen.php
+  ./${0##*/} "imagen.php"
   ./${0##*/} --verbose "archivo con espacios.bin"
   ./${0##*/} -- -archivo
 
-Salida: 0 = formato o firma reconocidos; 1 = desconocido o vacío;
-        2 = error de uso, dependencia o lectura.
-
-La detección es orientativa: una firma de cabecera no valida la estructura
-completa. Algunos formatos comparten firmas o no tienen una firma única.
+Códigos: 0 = MIME y firma compatibles; 1 = evidencia parcial o desconocido;
+         2 = error de uso/lectura/base; 3 = contradicción o ambigüedad.
+El código 0 NO garantiza integridad, validez completa ni seguridad.
+Conserva data/ junto al script. Funciona sin Internet, con Bash >= 4.4.
 EOF
 }
 
-fail() {
-    printf 'Error: %s\n' "$*" >&2
-    exit 2
-}
-
+(( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4) )) || fail 'Se requiere Bash 4.4 o superior.'
 verbose=false
-while (( $# > 0 )); do
+while (( $# )); do
     case "$1" in
         -v|--verbose) verbose=true; shift ;;
         -h|--help) usage; exit 0 ;;
+        --version) printf 'file_magic_number 2.0.0\n'; exit 0 ;;
         --) shift; break ;;
-        -*) fail "Opción desconocida: $1. Usa --help o -- antes del nombre." ;;
+        -*) fail "Opción desconocida: $1. Usa -- antes de un nombre con guion." ;;
         *) break ;;
     esac
 done
+if (( $# != 1 )); then usage >&2; exit 2; fi
 
-if (( $# != 1 )); then
-    usage >&2
-    exit 2
-fi
-
-for dependency in file od tr; do
-    command -v "$dependency" >/dev/null 2>&1 ||
-        fail "Falta '$dependency'. En Arch: sudo pacman -S file coreutils"
+for dependency in file od tr stat readlink dirname; do
+    command -v "$dependency" >/dev/null 2>&1 || fail "Falta '$dependency' (instala file y coreutils)."
 done
+script_path=$(readlink -f -- "${BASH_SOURCE[0]}") || fail 'No se pudo resolver la ruta del script.'
+script_dir=$(dirname -- "$script_path")
+database="$script_dir/data/signatures.tsv"
+[[ -r "$database" ]] || fail 'Falta data/signatures.tsv. Descarga o clona el repositorio completo.'
 
-# El prefijo impide que '-' se interprete como entrada estándar de file.
 path=$1
-[[ "$path" = /* ]] || path="./$path"
+[[ "$path" == /* ]] || path="./$path"
 [[ -f "$path" ]] || fail 'La ruta no es un archivo regular accesible.'
 [[ -r "$path" ]] || fail 'No tienes permiso para leer el archivo.'
-if [[ ! -s "$path" ]]; then
-    printf 'El archivo está vacío; no tiene una firma identificable.\n'
-    exit 1
+size=$(stat -Lc '%s' -- "$path") || fail 'No se pudo consultar el tamaño.'
+[[ "$size" =~ ^[0-9]+$ ]] || fail 'Tamaño de archivo no válido.'
+
+# Read the header even when MIME recognition succeeds. Hex avoids Bash NUL loss.
+header=$(od -An -v -tx1 -N 4096 -- "$path" | tr -d '[:space:]') || fail 'No se pudo leer la cabecera.'
+mime=$(file -b -L -E --mime-type -- "$path") || fail 'No se pudo detectar el MIME.'
+description=$(file -b -L -E -- "$path") || fail 'No se pudo obtener la descripción de file.'
+
+declare -A found patterns observed offsets ids extnames expected labels minimum strength
+declare -a order=()
+rules=0
+while IFS=$'\t' read -r id family offset pattern extensions mimes label min_size extra; do
+    [[ -z "$id" || "$id" == \#* ]] && continue
+    # Treat the database as data. Validate before arithmetic or glob matching.
+    [[ "$id" =~ ^S[0-9]+$ && "$family" =~ ^[a-z0-9][a-z0-9_-]*$ &&
+       "$offset" =~ ^-?[0-9]{1,8}$ && "$min_size" =~ ^[0-9]{1,8}$ &&
+       "$pattern" =~ ^([0-9a-f]{2}|\?\?)+$ && -z "$extra" &&
+       -n "$extensions" && -n "$mimes" && -n "$label" ]] || fail "Regla de firmas inválida: $id"
+    (( ${#pattern} <= 4096 )) || fail "Firma demasiado larga: $id"
+    ((rules += 1))
+    # Decimal normalization avoids interpreting a leading zero as octal.
+    if [[ "$offset" == -* ]]; then
+        position=$((size - 10#${offset#-}))
+    else
+        position=$((10#$offset))
+    fi
+    length=$((${#pattern} / 2))
+    (( position >= 0 && position + length <= size )) || continue
+    if (( position + length <= ${#header} / 2 )); then
+        actual=${header:position*2:length*2}
+    else
+        actual=$(od -An -v -tx1 -j "$position" -N "$length" -- "$path" | tr -d '[:space:]') ||
+            fail "No se pudo comprobar el offset $position."
+    fi
+    # The unquoted RHS is intentionally a validated hex glob ('??' = one byte).
+    [[ "$actual" == $pattern ]] || continue
+    fixed=${pattern//\?/}
+    score=$((${#fixed} / 2))
+    if [[ -z "${found[$family]:-}" ]]; then
+        order+=("$family")
+    elif (( score <= strength[$family] )); then
+        continue
+    fi
+    found[$family]=1
+    patterns[$family]=$pattern
+    observed[$family]=$actual
+    offsets[$family]=$position
+    ids[$family]=$id
+    extnames[$family]=$extensions
+    expected[$family]=$mimes
+    labels[$family]=$label
+    minimum[$family]=$((10#$min_size))
+    strength[$family]=$score
+done < "$database"
+(( rules >= 1 )) || fail 'La base de firmas está vacía.'
+
+# Suppress only documented parent signatures, never an unrelated candidate.
+[[ -n "${found[cr2]:-}" ]] && unset 'found[tif]'
+[[ -n "${found[eps]:-}" ]] && unset 'found[ps]'
+
+declare -a strong=() weak=()
+for family in "${order[@]}"; do
+    [[ -n "${found[$family]:-}" ]] || continue
+    # Short signatures are useful clues, but must not produce a unique verdict.
+    if (( strength[$family] >= 4 )); then strong+=("$family"); else weak+=("$family"); fi
+done
+
+status=1
+verdict='DESCONOCIDO: sin una firma corroborante en esta base.'
+type_label=$description
+selected=''
+short_signature=false
+if (( ${#strong[@]} > 1 )); then
+    verdict='AMBIGUO: coinciden firmas de varias familias; no se elige una a ciegas.'
+    type_label='varios formatos candidatos'
+    status=3
+elif (( ${#strong[@]} == 1 )); then
+    selected=${strong[0]}
+elif (( ${#weak[@]} == 1 )); then
+    selected=${weak[0]}
+    short_signature=true
+elif (( ${#weak[@]} > 1 )); then
+    verdict='EVIDENCIA PARCIAL: solo hay firmas cortas o poco específicas.'
+    type_label='firmas débiles; consulta también el MIME'
+elif [[ "$mime" == text/* || "$mime" == application/json || "$mime" == application/xml ]]; then
+    verdict='SOLO MIME: contenido textual sin firma propia corroborante en esta base.'
+elif [[ "$mime" != application/octet-stream && "$mime" != inode/x-empty && "$mime" != application/x-empty ]]; then
+    verdict='SOLO MIME: libmagic propone un formato; la base independiente no lo corrobora.'
 fi
 
-# -L sigue enlaces simbólicos; -E hace que los errores de lectura sean errores.
-mime=$(file -b -L -E --mime-type -- "$path") || fail 'No se pudo leer el MIME.'
-description=$(file -b -L -E -- "$path") || fail 'No se pudo analizar el archivo.'
-magic_hex=$(od -An -v -tx1 -N 32 -- "$path" | tr -d '[:space:]') ||
-    fail 'No se pudieron leer los primeros bytes.'
+if [[ -n "$selected" ]]; then
+    type_label=${labels[$selected]}
+    if (( size < minimum[$selected] )); then
+        verdict='EVIDENCIA PARCIAL: firma presente, pero tamaño insuficiente para esta familia.'
+    elif [[ "$short_signature" == true ]]; then
+        verdict='EVIDENCIA PARCIAL: firma corta; incluso si coincide el MIME, no basta para un veredicto firme.'
+    elif [[ "$selected" == cafebabe ]]; then
+        verdict='AMBIGUO: Java class y Mach-O universal comparten esta firma.'
+        status=3
+    elif [[ ",${expected[$selected]}," == *",$mime,"* && "$mime" != application/octet-stream ]]; then
+        verdict='CONCORDANTE: el MIME y los magic numbers son compatibles.'
+        status=0
+        case "$selected" in
+            zip|ole|ebml|bmff|ar) verdict='CONCORDANTE EN FAMILIA: el MIME es compatible con el contenedor; la firma no distingue su subtipo.' ;;
+        esac
+    elif [[ "${expected[$selected]}" == '-' || "$mime" == application/octet-stream ]]; then
+        verdict='EVIDENCIA PARCIAL: firma reconocida, sin corroboración MIME de esta familia.'
+    else
+        verdict='CONTRADICCIÓN: el MIME y la firma apuntan a tipos no compatibles en la tabla.'
+        status=3
+    fi
+fi
 
-extension=''
-type_name=''
-method='libmagic: firmas y otras comprobaciones del contenido'
-
-# Nombres legibles para formatos frecuentes. La detección la realiza libmagic.
-case "$mime" in
-    image/png) extension=png; type_name='imagen PNG' ;;
-    image/jpeg) extension=jpg; type_name='imagen JPEG' ;;
-    image/gif) extension=gif; type_name='imagen GIF' ;;
-    image/webp) extension=webp; type_name='imagen WebP' ;;
-    image/bmp|image/x-ms-bmp) extension=bmp; type_name='imagen BMP' ;;
-    image/tiff) extension=tiff; type_name='imagen TIFF' ;;
-    image/svg+xml) extension=svg; type_name='imagen SVG' ;;
-    image/avif) extension=avif; type_name='imagen AVIF' ;;
-    image/heic) extension=heic; type_name='imagen HEIC' ;;
-    image/heif) extension=heif; type_name='imagen HEIF' ;;
-    image/vnd.microsoft.icon|image/x-icon) extension=ico; type_name='icono ICO' ;;
-    application/pdf) extension=pdf; type_name='documento PDF' ;;
-    application/zip|application/x-zip*) extension=zip; type_name='contenedor ZIP' ;;
-    application/gzip|application/x-gzip) extension=gz; type_name='archivo comprimido GZIP' ;;
-    application/x-bzip2) extension=bz2; type_name='archivo comprimido BZIP2' ;;
-    application/x-xz) extension=xz; type_name='archivo comprimido XZ' ;;
-    application/x-7z-compressed) extension=7z; type_name='archivo comprimido 7-Zip' ;;
-    application/x-rar*|application/vnd.rar) extension=rar; type_name='archivo comprimido RAR' ;;
-    application/x-tar) extension=tar; type_name='contenedor TAR' ;;
-    application/x-sqlite3|application/vnd.sqlite3) extension=sqlite; type_name='base de datos SQLite' ;;
-    application/x-executable|application/x-pie-executable) extension=elf; type_name='ejecutable ELF' ;;
-    application/x-sharedlib) extension=so; type_name='objeto compartido ELF' ;;
-    application/x-dosexec|application/vnd.microsoft.portable-executable)
-        extension=exe; type_name='binario DOS/Windows (puede ser EXE o DLL)' ;;
-    application/java-archive|application/x-java-archive) extension=jar; type_name='contenedor Java JAR' ;;
-    application/vnd.android.package-archive) extension=apk; type_name='paquete Android APK' ;;
-    application/epub+zip) extension=epub; type_name='libro EPUB' ;;
-    application/vnd.openxmlformats-officedocument.wordprocessingml.document)
-        extension=docx; type_name='documento Word DOCX' ;;
-    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
-        extension=xlsx; type_name='hoja de cálculo Excel XLSX' ;;
-    application/vnd.openxmlformats-officedocument.presentationml.presentation)
-        extension=pptx; type_name='presentación PowerPoint PPTX' ;;
-    application/vnd.oasis.opendocument.text) extension=odt; type_name='documento OpenDocument ODT' ;;
-    application/vnd.oasis.opendocument.spreadsheet) extension=ods; type_name='hoja OpenDocument ODS' ;;
-    application/vnd.oasis.opendocument.presentation) extension=odp; type_name='presentación OpenDocument ODP' ;;
-    application/msword) extension=doc; type_name='documento Word DOC' ;;
-    application/vnd.ms-excel) extension=xls; type_name='hoja de cálculo Excel XLS' ;;
-    application/vnd.ms-powerpoint) extension=ppt; type_name='presentación PowerPoint PPT' ;;
-    application/rtf|text/rtf) extension=rtf; type_name='documento RTF' ;;
-    application/json|text/json) extension=json; type_name='datos JSON' ;;
-    application/xml|text/xml) extension=xml; type_name='documento XML' ;;
-    text/html) extension=html; type_name='documento HTML' ;;
-    text/x-php|application/x-php|application/x-httpd-php) extension=php; type_name='código PHP' ;;
-    text/x-python|text/x-script.python) extension=py; type_name='código Python' ;;
-    text/x-shellscript|application/x-shellscript) extension=sh; type_name='script de shell' ;;
-    text/javascript|application/javascript) extension=js; type_name='código JavaScript' ;;
-    audio/mpeg) extension=mp3; type_name='audio MPEG/MP3' ;;
-    audio/wav|audio/x-wav|audio/vnd.wave) extension=wav; type_name='audio WAV' ;;
-    audio/flac|audio/x-flac) extension=flac; type_name='audio FLAC' ;;
-    audio/ogg|video/ogg|application/ogg) extension=ogg; type_name='contenedor Ogg' ;;
-    audio/mp4) extension=m4a; type_name='audio en contenedor MP4' ;;
-    video/mp4) extension=mp4; type_name='contenedor MP4' ;;
-    video/webm|audio/webm) extension=webm; type_name='contenedor WebM' ;;
-    video/x-matroska|audio/x-matroska) extension=mkv; type_name='contenedor Matroska' ;;
-    video/x-msvideo) extension=avi; type_name='contenedor AVI' ;;
-    video/quicktime) extension=mov; type_name='contenedor QuickTime' ;;
-    application/vnd.tcpdump.pcap|application/x-pcap) extension=pcap; type_name='captura de red PCAP' ;;
-    application/x-pcapng) extension=pcapng; type_name='captura de red PCAPNG' ;;
-esac
-
-# Si libmagic no dio un formato de la lista, compara algunas firmas conocidas.
-# Esto también puede reconocer una cabecera de un archivo incompleto o falso:
-# se informa explícitamente como coincidencia de firma, sin validar estructura.
-if [[ -z "$type_name" ]]; then
-    case "$magic_hex" in
-        89504e470d0a1a0a*) extension=png; type_name='imagen PNG' ;;
-        ffd8ff*) extension=jpg; type_name='imagen JPEG' ;;
-        474946383761*|474946383961*) extension=gif; type_name='imagen GIF' ;;
-        255044462d*) extension=pdf; type_name='documento PDF' ;;
-        504b0304*|504b0506*|504b0708*) extension=zip; type_name='contenedor ZIP; puede contener otro formato' ;;
-        377abcaf271c*) extension=7z; type_name='archivo comprimido 7-Zip' ;;
-        526172211a0700*|526172211a070100*) extension=rar; type_name='archivo comprimido RAR' ;;
-        1f8b08*) extension=gz; type_name='archivo comprimido GZIP' ;;
-        fd377a585a00*) extension=xz; type_name='archivo comprimido XZ' ;;
-        53514c69746520666f726d6174203300*) extension=sqlite; type_name='base de datos SQLite' ;;
-        7f454c46*) extension=elf; type_name='binario ELF' ;;
-        52494646????????57454250*) extension=webp; type_name='imagen WebP' ;;
-        52494646????????57415645*) extension=wav; type_name='audio WAV' ;;
-        52494646????????41564920*) extension=avi; type_name='contenedor AVI' ;;
+# Extra sanity checks for a few common formats. These detect obvious truncation,
+# but are deliberately NOT called full validation (no full decoding or CRC pass).
+sanity='no implementada para esta familia'
+if [[ -n "$selected" ]]; then
+    case "$selected" in
+        png)
+            tail_hex=''
+            if (( size >= 12 )); then
+                tail_hex=$(od -An -v -tx1 -j "$((size - 12))" -N 12 -- "$path" | tr -d '[:space:]') || fail 'No se pudo leer el cierre PNG.'
+            fi
+            if [[ "${header:16:16}" != 0000000d49484452 || "$tail_hex" != 0000000049454e44ae426082 ]]; then
+                sanity='falló: se esperaba IHDR inicial e IEND final de PNG'
+            else
+                sanity='pasó: IHDR inicial e IEND final; no se verificaron todos los bloques/CRC'
+            fi ;;
+        jpg)
+            tail_hex=''
+            if (( size >= 2 )); then
+                tail_hex=$(od -An -v -tx1 -j "$((size - 2))" -N 2 -- "$path" | tr -d '[:space:]') || fail 'No se pudo leer el cierre JPEG.'
+            fi
+            if [[ "$tail_hex" == ffd9 ]]; then sanity='pasó: cierre JPEG EOI; no se decodificó la imagen'
+            else sanity='falló: no hay cierre JPEG EOI al final (puede estar truncado o tener datos añadidos)'; fi ;;
     esac
-    if [[ -n "$type_name" ]]; then
-        method='solo firma de cabecera; estructura completa no validada'
+fi
+if [[ "$sanity" == falló:* ]]; then
+    if (( status != 3 )); then
+        verdict='EVIDENCIA PARCIAL: la comprobación básica de estructura falló.'
+        status=1
     fi
 fi
 
-# Aprovecha también las extensiones de la base de libmagic para otros formatos.
-if [[ -z "$type_name" ]]; then
-    extensions=$(file -b -L --extension -- "$path" 2>/dev/null) || extensions=''
-    candidate=${extensions%%/*}
-    if [[ "$candidate" =~ ^[A-Za-z0-9][A-Za-z0-9_+-]*$ ]]; then
-        extension=$candidate
-        type_name=$description
-    elif [[ "$mime" == text/plain ]]; then
-        type_name='texto plano (sin extensión única)'
-    elif [[ "$mime" != application/octet-stream && "$mime" != application/x-empty ]]; then
-        # No confundir «no hay extensión conocida» con «no se reconoce nada».
-        type_name=$description
+if (( size == 0 )); then type_label='archivo vacío'; verdict='SIN EVIDENCIA: no hay bytes para identificar un formato.'; fi
+printf 'Tipo orientativo: %s\n' "$type_label"
+if [[ -n "$selected" ]]; then printf 'Extensiones de la familia: %s\n' "${extnames[$selected]}"; fi
+printf 'MIME detectado: %s\n' "$mime"
+printf 'Resultado: %s\n' "$verdict"
+printf 'Estructura básica: %s\n' "$sanity"
+
+count=0
+for family in "${strong[@]}" "${weak[@]}"; do
+    ((count += 1))
+    if [[ "$verbose" == true ]] || ((count <= 8)); then
+        printf 'Magic [%s]: %s | byte %s | patrón %s | observado %s\n' \
+            "${ids[$family]}" "${labels[$family]}" "${offsets[$family]}" "${patterns[$family]}" "${observed[$family]}"
     fi
-fi
+done
+(( count > 0 )) || printf 'Magic: sin coincidencias entre las %s reglas de la base.\n' "$rules"
+if (( count > 8 )) && [[ "$verbose" == false ]]; then printf 'Hay %s coincidencias; usa --verbose para verlas todas.\n' "$count"; fi
 
-status=0
-if [[ -n "$extension" ]]; then
-    printf 'El archivo parece ser: .%s (%s)\n' "$extension" "$type_name"
-elif [[ -n "$type_name" ]]; then
-    printf 'El archivo parece ser: %s\n' "$type_name"
-else
-    printf 'No se pudo identificar un formato concreto.\n'
-    printf 'Descripción de file: %s\n' "$description"
-    status=1
-fi
-
-if [[ "$method" == 'solo firma'* ]]; then
-    printf 'Nota: solo coincide la firma de cabecera; no confirma un archivo válido.\n'
-fi
+printf 'Alcance: identifica tipos probables; no garantiza validez completa ni seguridad.\n'
 if [[ "$verbose" == true ]]; then
-    printf 'MIME: %s\n' "$mime"
     printf 'Descripción de file: %s\n' "$description"
-    printf 'Método: %s\n' "$method"
-    printf 'Primeros 32 bytes (o los disponibles), en hexadecimal:\n'
-    od -An -v -tx1 -N 32 -- "$path" || fail 'No se pudo mostrar la cabecera.'
+    printf 'Tamaño: %s bytes | reglas consultadas: %s\n' "$size" "$rules"
+    printf 'Base: TheDiscordian/magic-bytes (copia local con licencia MIT).\n'
+    printf 'Primeros 32 bytes (hex): %s\n' "${header:0:64}"
 fi
-
 exit "$status"

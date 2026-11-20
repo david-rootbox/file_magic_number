@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/TheDiscordian/magic-bytes",
+  "commit": "26e7a9bd21d6b9d08740fb91b4a0f49754daacdb",
+  "license": "MIT",
+  "upstream_git_blobs": {
+    "rows_map.json": "9668c90bfa1d874e21fb619cbfd4638702a2b2f7",
+    "offset_list.json": "a1460f4018c64a52d28740b09d8dde91a4994634",
+    "LICENSE": "749aa1ecd9bd558a60d45bfdd304f7d2c86e0ae9"
+  },
+  "sha256": {
+    "rows_map.json": "fc16e0856cdf78dce93c0b05b470cfbc43716ff9de26273c6e87cddc2b323bd7",
+    "offset_list.json": "878292b74163fbc2e7b4b40e918c9ebd689975c65c53dda3efa96b06d918b695",
+    "LICENSE": "b801c8d677ef9701149e05cf98f28b82a56832dd67c94d96d36d25d063b1b353"
+  }
+}

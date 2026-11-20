@@ -1,0 +1,262 @@
+# file_magic_number signatures v2
+# Source: https://github.com/TheDiscordian/magic-bytes @ 26e7a9bd21d6b9d08740fb91b4a0f49754daacdb
+# id	family	offset	hex-pattern	extensions	mimes	label	minimum-size
+S0001	7z	0	377abcaf271c	7z	application/x-7z-compressed	archivo 7-Zip	32
+S0002	8svx	0	464f524d????????38535658	8svx	-	firma asociada a .8svx	0
+S0003	acbm	0	464f524d????????4143424d	acbm	-	firma asociada a .acbm	0
+S0004	accdb	0	000100005374616e6461726420414345204442	accdb	-	firma asociada a .accdb	0
+S0005	ace	0	2a2a4143452a2a	ace	-	firma asociada a .ace	0
+S0006	adx	0	0300000041505052	adx	-	firma asociada a .adx	0
+S0007	aff	0	414646	aff	-	firma asociada a .aff	0
+S0008	aiff	0	464f524d????????41494646	aif,aiff	audio/x-aiff,audio/aiff	audio AIFF	12
+S0009	alias	0	626f6f6b000000006d61726b00000000	alias	-	firma asociada a .alias	0
+S0010	amr	0	2321414d52	amr	-	firma asociada a .amr	0
+S0011	anbm	0	464f524d????????414e424d	anbm	-	firma asociada a .anbm	0
+S0012	ani	0	52494646????????41434f4e	ani	-	firma asociada a .ani	0
+S0013	anim	0	464f524d????????414e494d	anim	-	firma asociada a .anim	0
+S0014	ar	0	213c617263683e0a	ar,a,deb	application/x-archive,application/vnd.debian.binary-package,application/x-debian-package	contenedor ar; puede ser biblioteca o paquete DEB	8
+S0015	arj	0	60ea	arj	-	firma asociada a .arj	0
+S0016	asf	0	3026b2758e66cf11a6d900aa0062ce6c	asf	-	firma asociada a .asf	0
+S0017	au	0	2e736e64	au	-	firma asociada a .au	0
+S0018	avi	0	52494646????????41564920	avi	video/x-msvideo	contenedor AVI	12
+S0019	avro	0	4f626a01	avro	-	firma asociada a .avro	0
+S0020	bac	0	4241434b4d494b454449534b	bac	-	firma asociada a .bac	0
+S0021	bin	0	53503031	bin	-	firma asociada a .bin	0
+S0022	blend	0	424c454e444552	blend	-	firma asociada a .blend	0
+S0023	bmff	4	66747970	mp4,heif,avif	video/mp4,audio/mp4,image/heif,image/heic,image/avif,video/quicktime,video/3gpp	familia ISO BMFF; puede ser MP4, HEIF, AVIF u otra	16
+S0024	bmff	4	667479703367	mp4,heif,avif	video/mp4,audio/mp4,image/heif,image/heic,image/avif,video/quicktime,video/3gpp	familia ISO BMFF; puede ser MP4, HEIF, AVIF u otra	16
+S0025	bmff	4	6674797069736f6d	mp4,heif,avif	video/mp4,audio/mp4,image/heif,image/heic,image/avif,video/quicktime,video/3gpp	familia ISO BMFF; puede ser MP4, HEIF, AVIF u otra	16
+S0026	bmp	0	424d	bmp	image/bmp,image/x-ms-bmp	imagen BMP	26
+S0027	bpg	0	425047fb	bpg	-	firma asociada a .bpg	0
+S0028	bz2	0	425a68	bz2	application/x-bzip2	archivo BZIP2	10
+S0029	cab	0	49536328	cab	-	firma asociada a .cab	0
+S0030	cab	0	4d534346	cab	-	firma asociada a .cab	0
+S0031	cafebabe	0	cafebabe	class,macho	application/x-java-applet,application/java-vm,application/x-mach-binary	firma compartida: Java class o Mach-O universal	8
+S0032	cda	0	52494646????????43444441	cda	-	firma asociada a .cda	0
+S0033	cdb	0	0df01dc0	cdb	-	firma asociada a .cdb	0
+S0034	cdi	387785	4344303031	cdi	-	firma asociada a .cdi	0
+S0035	chm	0	495453460300000060000000	chm	-	firma asociada a .chm	0
+S0036	cin	0	802a5fd7	cin	-	firma asociada a .cin	0
+S0037	cmus	0	464f524d????????434d5553	cmus	-	firma asociada a .cmus	0
+S0038	cpio	0	303730373037	cpio	-	firma asociada a .cpio	0
+S0039	cr2	0	49492a00100000004352	cr2	image/x-canon-cr2,image/tiff	imagen Canon RAW CR2	16
+S0040	crt	0	2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d	crt	-	firma asociada a .crt	0
+S0041	crt	0	43363420434152545249444745202020	crt	-	firma asociada a .crt	0
+S0042	crx	0	43723234	crx	-	firma asociada a .crx	0
+S0043	csr	0	2d2d2d2d2d424547494e20434552544946494341544520524551554553542d2d2d2d2d	csr	-	firma asociada a .csr	0
+S0044	cwk	0	05070000424f424f0507000000000000000000000001	cwk	-	firma asociada a .cwk	0
+S0045	cwk	0	0607e100424f424f0607e10000000000000000000001	cwk	-	firma asociada a .cwk	0
+S0046	d64	91556	a03241a0a0a0	d64	-	firma asociada a .d64	0
+S0047	d81	61819	a03344a0a0	d81	-	firma asociada a .d81	0
+S0048	daa	0	444141	daa	-	firma asociada a .daa	0
+S0049	dat	0	504d4f43434d4f43	dat	-	firma asociada a .dat	0
+S0050	dat	0	72656766	dat	-	firma asociada a .dat	0
+S0051	dba	0	00014244	dba	-	firma asociada a .dba	0
+S0052	dba	0	bebafeca	dba	-	firma asociada a .dba	0
+S0053	dcm	128	4449434d	dcm,dicom	application/dicom	imagen DICOM	132
+S0054	dcr	0	52494658????????4647444d	dcr	-	firma asociada a .dcr	0
+S0055	dcr	0	58464952????????4d444746	dcr	-	firma asociada a .dcr	0
+S0056	der	0	3082	der	-	firma asociada a .der	0
+S0057	dex	0	6465780a30333500	dex	-	firma asociada a .dex	0
+S0058	dir	0	52494658????????4d563933	dir	-	firma asociada a .dir	0
+S0059	dir	0	58464952????????3339564d	dir	-	firma asociada a .dir	0
+S0060	djvu	0	41542654464f524d????????444a56	djvu	-	firma asociada a .djvu	0
+S0061	dmg	-512	6b6f6c79	dmg	application/x-apple-diskimage	imagen de disco Apple DMG	512
+S0062	doc	0	0d444f43	doc	-	documento DeskMate (no identifica un documento Word)	0
+S0063	dpx	0	53445058	dpx	-	firma asociada a .dpx	0
+S0064	dpx	0	58504453	dpx	-	firma asociada a .dpx	0
+S0065	drc	0	445241434f	drc	-	firma asociada a .drc	0
+S0066	drw	0	01ff02040302	drw	-	firma asociada a .drw	0
+S0067	dsp	0	23204d6963726f736f667420446576656c6f7065722053747564696f	dsp	-	firma asociada a .dsp	0
+S0068	dss	0	02647373	dss	-	firma asociada a .dss	0
+S0069	dss	0	03647373	dss	-	firma asociada a .dss	0
+S0070	dtd	0	0764743264647464	dtd	-	firma asociada a .dtd	0
+S0071	e01	0	455646	e01	-	firma asociada a .e01	0
+S0072	ebml	0	1a45dfa3	mkv,webm	video/x-matroska,audio/x-matroska,video/webm,audio/webm	contenedor EBML; puede ser Matroska o WebM	8
+S0073	elf	0	7f454c46	elf,so	application/x-executable,application/x-pie-executable,application/x-sharedlib,application/x-object,application/x-coredump	binario ELF	52
+S0074	eml	0	52656365697665643a	eml	-	firma asociada a .eml	0
+S0075	eps	0	252150532d41646f62652d332e3020455053462d332e30	eps	application/postscript	documento EPS	24
+S0076	eps	0	252150532d41646f62652d332e3120455053462d332e30	eps	application/postscript	documento EPS	24
+S0077	evt	0	4c664c65	evt	-	firma asociada a .evt	0
+S0078	evtx	0	456c6646696c65	evtx	-	firma asociada a .evtx	0
+S0079	ex01	0	45564632	ex01	-	firma asociada a .ex01	0
+S0080	exr	0	762f3101	exr	-	firma asociada a .exr	0
+S0081	ez2	0	454d5832	ez2	-	firma asociada a .ez2	0
+S0082	ez3	0	454d5533	ez3	-	firma asociada a .ez3	0
+S0083	faxx	0	464f524d????????46415858	faxx	-	firma asociada a .faxx	0
+S0084	fh8	0	41474433	fh8	-	firma asociada a .fh8	0
+S0085	fits	0	53494d504c4520203d202020202020202020202020202020202020202054	fits	-	firma asociada a .fits	0
+S0086	flac	0	664c6143	flac	audio/flac,audio/x-flac	audio FLAC	8
+S0087	flif	0	464c4946	flif	-	firma asociada a .flif	0
+S0088	flm	0	31304c46	flm	-	firma asociada a .flm	0
+S0089	flp	0	464c6864	flp	-	firma asociada a .flp	0
+S0090	flv	0	464c56	flv	-	firma asociada a .flv	0
+S0091	ftxt	0	464f524d????????46545854	ftxt	-	firma asociada a .ftxt	0
+S0092	g64	0	4753522d31353431	g64	-	firma asociada a .g64	0
+S0093	gif	0	474946383761	gif	image/gif	imagen GIF	14
+S0094	gif	0	474946383961	gif	image/gif	imagen GIF	14
+S0095	grib	0	47524942	grib	-	firma asociada a .grib	0
+S0096	grp	0	504d4343	grp	-	firma asociada a .grp	0
+S0097	gz	0	1f8b	gz,tgz	application/gzip,application/x-gzip	archivo GZIP	18
+S0098	hazelrules	0	485a4c5200000018	hazelrules	-	firma asociada a .hazelrules	0
+S0099	hdr	0	233f52414449414e43450a	hdr	-	firma asociada a .hdr	0
+S0100	hlp	0	3f5f	hlp	-	firma asociada a .hlp	0
+S0101	icm	0	4b434d53	icm	-	firma asociada a .icm	0
+S0102	icns	0	69636e73	icns	-	firma asociada a .icns	0
+S0103	ico	0	00000100	ico	image/x-icon,image/vnd.microsoft.icon	icono ICO	22
+S0104	identifier	0	5b5a6f6e655472616e736665725d	identifier	-	firma asociada a .identifier	0
+S0105	idx	0	494e4458	idx	-	firma asociada a .idx	0
+S0106	iff	0	464f524d????????46414e54	iff	-	firma asociada a .iff	0
+S0107	ilbm	0	464f524d????????494c424d	ilbm	-	firma asociada a .ilbm	0
+S0108	indd	0	0606edf5d81d46e5bd31efe7fe74b71d	indd	-	firma asociada a .indd	0
+S0109	iso	32769	4344303031	iso	application/x-iso9660-image	imagen de disco ISO 9660	34816
+S0110	isz	0	49735a21	isz	-	firma asociada a .isz	0
+S0111	jp2	0	0000000c6a5020200d0a870a	jp2,j2k	image/jp2,image/jpeg2000	imagen JPEG 2000	12
+S0112	jp2	0	ff4fff51	jp2,j2k	image/jp2,image/jpeg2000	imagen JPEG 2000	12
+S0113	jpg	0	ffd8ff	jpg,jpeg,jpe	image/jpeg	imagen JPEG	4
+S0114	jpg	0	ffd8ffdb	jpg,jpeg,jpe	image/jpeg	imagen JPEG	4
+S0115	jpg	0	ffd8ffe0	jpg,jpeg,jpe	image/jpeg	imagen JPEG	4
+S0116	jpg	0	ffd8ffe000104a4649460001	jpg,jpeg,jpe	image/jpeg	imagen JPEG	4
+S0117	jpg	0	ffd8ffe1????457869660000	jpg,jpeg,jpe	image/jpeg	imagen JPEG	4
+S0118	jpg	0	ffd8ffee	jpg,jpeg,jpe	image/jpeg	imagen JPEG	4
+S0119	jxl	0	0000000c4a584c200d0a870a	jxl	image/jxl	imagen JPEG XL	2
+S0120	jxl	0	ff0a	jxl	image/jxl	imagen JPEG XL	2
+S0121	kdb	0	3748030200000000583530394b4559	kdb	-	firma asociada a .kdb	0
+S0122	key	0	2d2d2d2d2d424547494e204453412050524956415445204b45592d2d2d2d2d	key	-	firma asociada a .key	0
+S0123	key	0	2d2d2d2d2d424547494e2050524956415445204b45592d2d2d2d2d	key	-	firma asociada a .key	0
+S0124	key	0	2d2d2d2d2d424547494e205245412050524956415445204b45592d2d2d2d2d	key	-	firma asociada a .key	0
+S0125	lep	0	cf8401	lep	-	firma asociada a .lep	0
+S0126	luac	0	1b4c7561	luac	-	firma asociada a .luac	0
+S0127	lz	0	4c5a4950	lz	-	firma asociada a .lz	0
+S0128	lz4	0	04224d18	lz4	application/x-lz4	archivo LZ4	7
+S0129	lzfse	0	62767832	lzfse	-	firma asociada a .lzfse	0
+S0130	lzh	2	2d686c302d	lzh	-	firma asociada a .lzh	0
+S0131	lzh	2	2d686c352d	lzh	-	firma asociada a .lzh	0
+S0132	m2p	0	000001ba	m2p	-	firma asociada a .m2p	0
+S0133	macho	0	cefaedfe	macho,o	application/x-mach-binary	binario Mach-O	28
+S0134	macho	0	cffaedfe	macho,o	application/x-mach-binary	binario Mach-O	28
+S0135	macho	0	feedface	macho,o	application/x-mach-binary	binario Mach-O	28
+S0136	macho	0	feedfacf	macho,o	application/x-mach-binary	binario Mach-O	28
+S0137	mdb	0	000100005374616e64617264204a6574204442	mdb	-	firma asociada a .mdb	0
+S0138	mgw	0	6d61696e2e6273	mgw	-	firma asociada a .mgw	0
+S0139	mid	0	4d546864	mid,midi	audio/midi,audio/x-midi	audio MIDI	14
+S0140	mlv	0	4d4c5649	mlv	-	firma asociada a .mlv	0
+S0141	mny	0	000100004d534953414d204461746162617365	mny	-	firma asociada a .mny	0
+S0142	mp3	0	494433	mp3	audio/mpeg	audio MPEG o etiqueta ID3	10
+S0143	mp3	0	fff2	mp3	audio/mpeg	audio MPEG o etiqueta ID3	10
+S0144	mp3	0	fff3	mp3	audio/mpeg	audio MPEG o etiqueta ID3	10
+S0145	mp3	0	fffb	mp3	audio/mpeg	audio MPEG o etiqueta ID3	10
+S0146	mpg	0	000001b3	mpg	-	firma asociada a .mpg	0
+S0147	mz	0	4d5a	exe,dll	application/x-dosexec,application/vnd.microsoft.portable-executable	familia MZ; puede ser DOS, EXE, DLL u otro	64
+S0148	mz	0	5a4d	exe,dll	application/x-dosexec,application/vnd.microsoft.portable-executable	familia MZ; puede ser DOS, EXE, DLL u otro	64
+S0149	nes	0	4e4553	nes	-	firma asociada a .nes	0
+S0150	nes	0	4e45531a	nes	-	firma asociada a .nes	0
+S0151	nri	0	0e4e65726f49534f	nri	-	firma asociada a .nri	0
+S0152	nui	0	4e555255494d47	nui	-	firma asociada a .nui	0
+S0153	nui	0	4e55525550414c	nui	-	firma asociada a .nui	0
+S0154	oar	0	4f4152	oar	-	firma asociada a .oar	0
+S0155	ogg	0	4f676753	ogg,oga,ogv,opus	application/ogg,audio/ogg,video/ogg	contenedor Ogg	27
+S0156	ole	0	d0cf11e0a1b11ae1	ole,cfb	application/x-ole-storage,application/CDFV2,application/x-cdf,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/x-msi,application/vnd.ms-outlook	contenedor OLE/CFB; puede ser DOC, XLS, PPT, MSI u otro	512
+S0157	orc	0	4f5243	orc	-	firma asociada a .orc	0
+S0158	otf	0	4f54544f	otf	font/otf,application/vnd.ms-opentype	fuente OpenType	12
+S0159	p25	0	65877856	p25	-	firma asociada a .p25	0
+S0160	parquet	0	50415231	parquet	-	firma asociada a .parquet	0
+S0161	pbm	0	50310a	pbm	-	firma asociada a .pbm	0
+S0162	pbm	0	50340a	pbm	-	firma asociada a .pbm	0
+S0163	pbt	0	785634	pbt	-	firma asociada a .pbt	0
+S0164	pcap	0	4d3cb2a1	pcap,cap	application/vnd.tcpdump.pcap,application/x-pcap	captura de red PCAP	24
+S0165	pcap	0	a1b23c4d	pcap,cap	application/vnd.tcpdump.pcap,application/x-pcap	captura de red PCAP	24
+S0166	pcap	0	a1b2c3d4	pcap,cap	application/vnd.tcpdump.pcap,application/x-pcap	captura de red PCAP	24
+S0167	pcap	0	d4c3b2a1	pcap,cap	application/vnd.tcpdump.pcap,application/x-pcap	captura de red PCAP	24
+S0168	pcapng	0	0a0d0d0a	pcapng	application/x-pcapng	captura de red PCAPNG	28
+S0169	pcv	0	5555aaaa	pcv	-	firma asociada a .pcv	0
+S0170	pdf	0	255044462d	pdf	application/pdf	documento PDF	14
+S0171	pgm	0	50320a	pgm	-	firma asociada a .pgm	0
+S0172	pgm	0	50350a	pgm	-	firma asociada a .pgm	0
+S0173	pgp	0	85????03	pgp	-	firma asociada a .pgp	0
+S0174	plist	0	62706c697374	plist	-	firma asociada a .plist	0
+S0175	png	0	89504e470d0a1a0a	png	image/png	imagen PNG	45
+S0176	ppk	0	50755454592d557365722d4b65792d46696c652d323a	ppk	-	firma asociada a .ppk	0
+S0177	ppk	0	50755454592d557365722d4b65792d46696c652d333a	ppk	-	firma asociada a .ppk	0
+S0178	ppm	0	50330a	ppm	-	firma asociada a .ppm	0
+S0179	ppm	0	50360a	ppm	-	firma asociada a .ppm	0
+S0180	ps	0	25215053	ps	application/postscript	documento PostScript	4
+S0181	psd	0	38425053	psd	-	firma asociada a .psd	0
+S0182	pst	0	2142444e	pst	-	firma asociada a .pst	0
+S0183	pub	0	2d2d2d2d2d424547494e2053534832204b45592d2d2d2d2d	pub	-	firma asociada a .pub	0
+S0184	qcow	0	514649	qcow	-	firma asociada a .qcow	0
+S0185	qcp	0	52494646????????514c434d	qcp	-	firma asociada a .qcp	0
+S0186	qoi	0	716f6966	qoi	image/qoi,image/x-qoi	imagen QOI	14
+S0187	rar	0	526172211a0700	rar	application/vnd.rar,application/x-rar,application/x-rar-compressed	archivo RAR	7
+S0188	rar	0	526172211a070100	rar	application/vnd.rar,application/x-rar,application/x-rar-compressed	archivo RAR	7
+S0189	rc	0	53455136	rc	-	firma asociada a .rc	0
+S0190	rpm	0	edabeedb	rpm	application/x-rpm	paquete RPM	96
+S0191	rs	0	5253564b44415441	rs	-	firma asociada a .rs	0
+S0192	rtf	0	7b5c72746631	rtf	application/rtf,text/rtf	documento RTF	7
+S0193	sdb	8	73646266	sdb	-	firma asociada a .sdb	0
+S0194	sib	0	0f534942454c495553	sib	-	firma asociada a .sib	0
+S0195	sil	0	232153494c4b0a	sil	-	firma asociada a .sil	0
+S0196	skf	0	07534b46	skf	-	firma asociada a .skf	0
+S0197	slob	0	212d31534c4f421f	slob	-	firma asociada a .slob	0
+S0198	sml	0	3a290a	sml	-	firma asociada a .sml	0
+S0199	smus	0	464f524d????????534d5553	smus	-	firma asociada a .smus	0
+S0200	sqlite	0	53514c69746520666f726d6174203300	sqlite,sqlite3,db	application/vnd.sqlite3,application/x-sqlite3	base de datos SQLite	100
+S0201	srt	0	310a3030	srt	-	firma asociada a .srt	0
+S0202	stg	0	4d494c20	stg	-	firma asociada a .stg	0
+S0203	svg	0	3c737667	svg	image/svg+xml	imagen SVG	5
+S0204	swf	0	435753	swf	-	firma asociada a .swf	0
+S0205	swf	0	465753	swf	-	firma asociada a .swf	0
+S0206	t64	0	433634207461706520696d6167652066696c65	t64	-	firma asociada a .t64	0
+S0207	tar	257	7573746172003030	tar	application/x-tar	contenedor TAR	512
+S0208	tar	257	7573746172202000	tar	application/x-tar	contenedor TAR	512
+S0209	tda	0	00014454	tda	-	firma asociada a .tda	0
+S0210	tde	0	20020162a01eab0702000000	tde	-	firma asociada a .tde	0
+S0211	tdef	0	54444546	tdef	-	firma asociada a .tdef	0
+S0212	tif	0	49492a00	tif,tiff	image/tiff	imagen TIFF	8
+S0213	tif	0	4d4d002a	tif,tiff	image/tiff	imagen TIFF	8
+S0214	toast	0	455202000000	toast	-	firma asociada a .toast	0
+S0215	toast	0	8b455202000000	toast	-	firma asociada a .toast	0
+S0216	tox	0	746f7833	tox	-	firma asociada a .tox	0
+S0217	ttf	0	0001000000	ttf	font/ttf,application/x-font-ttf	fuente TrueType	12
+S0218	vbe	0	23407e5e	vbe	-	firma asociada a .vbe	0
+S0219	vdi	0	3c3c3c204f7261636c6520564d205669727475616c426f78204469736b20496d616765203e3e3e	vdi	-	firma asociada a .vdi	0
+S0220	vhd	0	636f6e6e6563746978	vhd	-	firma asociada a .vhd	0
+S0221	vhdx	0	7668647866696c65	vhdx	-	firma asociada a .vhdx	0
+S0222	vmdk	0	23204469736b2044657363726970746f	vmdk	-	firma asociada a .vmdk	0
+S0223	vmdk	0	4b444d	vmdk	-	firma asociada a .vmdk	0
+S0224	voc	0	437265617469766520566f6963652046696c651a1a00	voc	-	firma asociada a .voc	0
+S0225	vpk	0	3412aa55	vpk	-	firma asociada a .vpk	0
+S0226	wad	0	49574144	wad	-	firma asociada a .wad	0
+S0227	wallet	0	0a166f72672e626974636f696e2e7072	wallet	-	firma asociada a .wallet	0
+S0228	wasm	0	0061736d	wasm	application/wasm	binario WebAssembly	8
+S0229	wav	0	52494646????????57415645	wav	audio/x-wav,audio/wav,audio/vnd.wave	audio WAV	12
+S0230	webp	0	52494646????????57454250	webp	image/webp	imagen WebP	20
+S0231	wim	0	4d5357494d000000d000000000	wim	-	firma asociada a .wim	0
+S0232	wks	0	0e574b53	wks	-	firma asociada a .wks	0
+S0233	wmf	0	d7cdc69a	wmf	-	firma asociada a .wmf	0
+S0234	woff	0	774f4646	woff	font/woff,application/font-woff	fuente WOFF	44
+S0235	woff2	0	774f4632	woff2	font/woff2	fuente WOFF2	48
+S0236	xar	0	78617221	xar	-	firma asociada a .xar	0
+S0237	xcf	0	67696d7020786366	xcf	-	firma asociada a .xcf	0
+S0238	xml	0	003c003f0078006d006c0020	xml	application/xml,text/xml,image/svg+xml	familia de documentos XML	5
+S0239	xml	0	3c003f0078006d006c0020	xml	application/xml,text/xml,image/svg+xml	familia de documentos XML	5
+S0240	xml	0	3c3f786d6c20	xml	application/xml,text/xml,image/svg+xml	familia de documentos XML	5
+S0241	xml	0	4c6fa7949340	xml	application/xml,text/xml,image/svg+xml	familia de documentos XML	5
+S0242	xpm	0	2f2a2058504d202a2f	xpm	-	firma asociada a .xpm	0
+S0243	xz	0	fd377a585a00	xz	application/x-xz	archivo XZ	12
+S0244	yuvn	0	464f524d????????5955564e	yuvn	-	firma asociada a .yuvn	0
+S0245	z	0	1f9d	z	-	firma asociada a .z	0
+S0246	z	0	1fa0	z	-	firma asociada a .z	0
+S0247	zip	0	504b0304	zip	application/zip,application/x-zip,application/x-zip-compressed,application/java-archive,application/x-java-archive,application/epub+zip,application/vnd.android.package-archive,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation	contenedor ZIP; subtipo no determinado por la firma	22
+S0248	zip	0	504b0506	zip	application/zip,application/x-zip,application/x-zip-compressed,application/java-archive,application/x-java-archive,application/epub+zip,application/vnd.android.package-archive,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation	contenedor ZIP; subtipo no determinado por la firma	22
+S0249	zip	0	504b0708	zip	application/zip,application/x-zip,application/x-zip-compressed,application/java-archive,application/x-java-archive,application/epub+zip,application/vnd.android.package-archive,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation	contenedor ZIP; subtipo no determinado por la firma	22
+S0250	zlib	0	7801	zlib	-	firma asociada a .zlib	0
+S0251	zlib	0	7820	zlib	-	firma asociada a .zlib	0
+S0252	zlib	0	785e	zlib	-	firma asociada a .zlib	0
+S0253	zlib	0	787d	zlib	-	firma asociada a .zlib	0
+S0254	zlib	0	789c	zlib	-	firma asociada a .zlib	0
+S0255	zlib	0	78bb	zlib	-	firma asociada a .zlib	0
+S0256	zlib	0	78da	zlib	-	firma asociada a .zlib	0
+S0257	zlib	0	78f9	zlib	-	firma asociada a .zlib	0
+S0258	zoo	0	5a4f4f	zoo	-	firma asociada a .zoo	0
+S0259	zst	0	28b52ffd	zst	application/zstd,application/x-zstd	archivo Zstandard	6

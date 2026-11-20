@@ -1,0 +1,142 @@
+{
+  "rules": 259,
+  "families": 201,
+  "excluded": [
+    [
+      "23 21",
+      "sin nombre utilizable"
+    ],
+    [
+      "54 44 46 24",
+      "sin nombre utilizable"
+    ],
+    [
+      "00 01 00 00",
+      "sin nombre utilizable"
+    ],
+    [
+      "52 4E 43 01",
+      "sin nombre utilizable"
+    ],
+    [
+      "52 4E 43 02",
+      "sin nombre utilizable"
+    ],
+    [
+      "C9",
+      "firma trivial, de un byte o solo ceros"
+    ],
+    [
+      "EF BB BF",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "FF FE",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "FE FF",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "FF FE 00 00",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "00 00 FE FF",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "2B 2F 76 38",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "2B 2F 76 39",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "2B 2F 76 2B",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "2B 2F 76 2F",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "0E FE FF",
+      "marca de codificación; no identifica un formato único"
+    ],
+    [
+      "DD 73 66 73",
+      "sin nombre utilizable"
+    ],
+    [
+      "FE ED FE ED",
+      "sin nombre utilizable"
+    ],
+    [
+      "24 53 44 49 30 30 30 31",
+      "sin nombre utilizable"
+    ],
+    [
+      "44 43 4D 01 50 41 33 30",
+      "sin nombre utilizable"
+    ],
+    [
+      "50 41 33 30",
+      "sin nombre utilizable"
+    ],
+    [
+      "53 5A 44 44 88 F0 27 33",
+      "sin nombre utilizable"
+    ],
+    [
+      "2D 2D 2D 2D 2D 42 45 47 49 4E 20 4F 50 45 4E 53 53 48 20 50 52 49 56 41 54 45 20 4B 45 59 2D 2D 2D 2D 2D",
+      "sin nombre utilizable"
+    ],
+    [
+      "27 05 19 56",
+      "sin nombre utilizable"
+    ],
+    [
+      "54 41 50 45",
+      "sin nombre utilizable"
+    ],
+    [
+      "47",
+      "regla periódica: no basta un marcador de un byte"
+    ],
+    [
+      "4A 6F 79 21",
+      "sin nombre utilizable"
+    ],
+    [
+      "4B 57 41 4A",
+      "sin nombre utilizable"
+    ],
+    [
+      "53 5A 44 44",
+      "sin nombre utilizable"
+    ],
+    [
+      "23 25 4D 6F 64 75 6C 65",
+      "sin nombre utilizable"
+    ],
+    [
+      "AC ED",
+      "sin nombre utilizable"
+    ],
+    [
+      "DB 0A CE 00",
+      "sin nombre utilizable"
+    ],
+    [
+      "52 4B 4D 43 32 31 30",
+      "sin nombre utilizable"
+    ],
+    [
+      "offset:11:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+      "firma trivial, de un byte o solo ceros"
+    ]
+  ]
+}
