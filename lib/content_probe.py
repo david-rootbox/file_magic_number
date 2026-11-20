@@ -429,8 +429,10 @@ def main():
     try:
         # Resource bounds apply only to this helper, not the user's terminal.
         import resource
-        resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
-        resource.setrlimit(resource.RLIMIT_AS, (384 * 1024 * 1024, 384 * 1024 * 1024))
+        for kind, requested in [(resource.RLIMIT_CPU, 5), (resource.RLIMIT_AS, 384 * 1024 * 1024)]:
+            inherited = resource.getrlimit(kind)
+            bound = min([requested] + [value for value in inherited if value != resource.RLIM_INFINITY])
+            resource.setrlimit(kind, (bound, bound))
         with open(args.path, "rb") as source:
             import os
             total = os.fstat(source.fileno()).st_size

@@ -16,7 +16,7 @@ import zipfile
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "file_magic_number"
+SCRIPT = ROOT / "lib/file_probe.sh"
 REAL_FILE = shutil.which("file")
 
 def chunk(name, data):

@@ -1,29 +1,24 @@
 # 🔎 file_magic_number
 
-**Identifica formatos, reconoce pistas de lenguajes y distingue el archivo del contenido que puede incluir.**
+**Inspección rápida de archivos y contenedores para auditorías, con evidencias y una terminal legible.**
 
-Herramienta en **Bash con un analizador local en Python 3** que combina tres capas en cada consulta: `file`/libmagic, una base independiente de firmas públicas y el análisis del contenido. No utiliza la extensión del nombre para decidir el formato o el lenguaje.
+La versión **4.0.0** combina MIME/libmagic, magic numbers y reconocimiento de contenido con recorrido limitado de contenedores. Muestra el formato exterior, las pistas de código y los miembros internos por separado. La salida va únicamente a la terminal: no genera informes ni archivos JSON de resultados.
 
-La versión **3.0.0** también puede reconocer PHP probable cuando `file` solo devuelve `ASCII text` o `text/plain`, incluidos fragmentos con `<?=`, saltos de línea y BOM. La representación hexadecimal permite inspeccionar los bytes; reconocer un lenguaje requiere además examinar sus delimitadores, tokens o sintaxis.
+## Qué puedes revisar
 
-```console
-$ ./file_magic_number imagen.php
-Tipo orientativo: imagen PNG
-Extensiones de la familia: png
-MIME detectado: image/png
-Resultado: CONCORDANTE: el MIME y los magic numbers son compatibles.
-Estructura básica: pasó: IHDR inicial e IEND final; no se verificaron todos los bloques/CRC
-Magic [S0175]: imagen PNG | byte 0 | patrón 89504e470d0a1a0a | observado 89504e470d0a1a0a
-Muestra de contenido: 69/69 bytes | codificación: datos binarios
-Nota de contenido: No se encontraron pistas suficientes de los lenguajes soportados en la muestra.
-Alcance: identifica tipos probables; no garantiza validez completa ni seguridad.
-```
+- Archivos cuya extensión no concuerda con el MIME detectado: por ejemplo, `imagen.jpg` que contiene PHP.
+- Texto que `file` identifica como `ASCII text`, pero presenta indicadores de PHP, Python u otros lenguajes soportados.
+- Miembros de ZIP, TAR y flujos GZIP/BZIP2/XZ, incluidos contenedores anidados dentro de los límites.
+- Estructuras compatibles con DOCX/DOCM, XLSX/XLSM, PPTX/PPTM, JAR, APK y EPUB a partir de sus marcadores internos.
+- Rutas internas absolutas o con `..`, nombres con dos puntos que pueden interpretarse como ADS en Windows, enlaces, entradas especiales y nombres duplicados.
+- Componentes Office llamados `vbaProject.bin`, objetos en directorios `embeddings` y relaciones XML externas. Son indicadores: no se extrae ni ejecuta código VBA ni se visitan destinos externos.
+- Archivos cifrados, dañados, con métodos de compresión no soportados o que superan los presupuestos: aparecen explícitamente como no analizados o incompletos.
 
-En este ejemplo, `imagen.php` contiene un PNG real renombrado. El nombre no modifica la identificación.
+Las coincidencias orientan la revisión. No prueban que exista una vulnerabilidad, que un archivo se ejecute en un servidor o que sea malicioso.
 
 ## Instalación
 
-Necesitas **Linux, Bash 4.4 o superior, Python 3.9 o superior, file/libmagic y GNU Coreutils**. Python solo utiliza su biblioteca estándar: no se necesita `pip`, Node ni instalar paquetes Python adicionales. El análisis funciona sin conexión y no envía archivos a servidores.
+Requiere **Linux, Bash ≥ 4.4, Python ≥ 3.9, file/libmagic y GNU Coreutils**. Solo se utiliza la biblioteca estándar de Python; no necesitas `pip` ni paquetes adicionales. Se conservan la base de firmas y su licencia en el repositorio.
 
 En Arch Linux:
 
@@ -31,246 +26,227 @@ En Arch Linux:
 sudo pacman -S --needed bash python file coreutils git
 ```
 
-En Debian, Ubuntu o Kali:
+En Debian/Ubuntu/Kali con una versión compatible de Python:
 
 ```bash
 sudo apt install bash python3 file coreutils git
 ```
 
-Descarga el repositorio completo:
+Para instalar en tu carpeta actual:
 
 ```bash
 git clone https://github.com/david-rootbox/file_magic_number.git
 cd file_magic_number
-./file_magic_number "archivo.php"
+./file_magic_number --version
+./file_magic_number "archivo.zip"
 ```
 
-**Conserva `data/` y `lib/` junto al script.** Descargar únicamente el ejecutable no es suficiente. Puedes invocarlo desde cualquier directorio o mediante un enlace simbólico al script original.
-
-Si ya lo habías clonado:
-
-```bash
-git pull --ff-only
-```
-
-Si actualizas desde la versión 2, instala también Python 3 antes de ejecutarlo.
-
-### Instalación para todos los usuarios en Arch Linux
+### Todos los usuarios: /opt + /usr/local/bin
 
 ```bash
 sudo git clone https://github.com/david-rootbox/file_magic_number.git /opt/file_magic_number
-sudo chmod 755 /opt/file_magic_number/file_magic_number
+sudo chown -R root:root /opt/file_magic_number
 sudo chmod -R a+rX /opt/file_magic_number
+sudo chmod -R go-w /opt/file_magic_number
+sudo chmod 755 /opt/file_magic_number/file_magic_number
 sudo mkdir -p /usr/local/bin
 sudo ln -s /opt/file_magic_number/file_magic_number /usr/local/bin/file_magic_number
 file_magic_number --version
 ```
 
-`/usr/local/bin` debe estar en el `PATH`. El enlace permite conservar todos los componentes en `/opt` y ejecutar el comando desde cualquier carpeta. Para actualizar esta instalación, usa `sudo git -C /opt/file_magic_number pull --ff-only`. No hace falta `sudo` para analizar archivos que tu usuario pueda leer.
+Mantén `data/` y `lib/` junto al comando. El enlace simbólico permite ejecutarlo desde cualquier carpeta; `/usr/local/bin` debe estar en tu `PATH`. Para analizar archivos que tu usuario puede leer no hace falta `sudo`.
 
-## Uso
-
-Identificación normal:
+Si ya tienes esta instalación:
 
 ```bash
-./file_magic_number "archivo.php"
+sudo git -C /opt/file_magic_number pull --ff-only
+file_magic_number --version
 ```
 
-Modo detallado, con todas las coincidencias, descripción de libmagic, tamaño y primeros 32 bytes:
+## Ejemplos de uso en una auditoría
+
+### 1. Revisar una subida con extensión dudosa
 
 ```bash
-./file_magic_number --verbose "archivo.php"
+file_magic_number "imagen.jpg"
+file_magic_number --verbose "imagen.jpg"
 ```
 
-Para ampliar la muestra de contenido de 1 MiB a 4 MiB:
+La clasificación se basa en el contenido. Después se compara el nombre como evidencia adicional; la extensión no decide el tipo. Un `.jpg` con PHP puede mostrar **PHP probable**, MIME `text/plain` y una discrepancia de extensión.
+
+### 2. Inspeccionar un ZIP y sus miembros
 
 ```bash
-./file_magic_number --max-bytes 4194304 "archivo.bin"
+file_magic_number "entrega.zip"
 ```
 
-`--max-bytes` acepta entre 4096 y 16777216 bytes. Las comprobaciones de firmas en offsets conocidos siguen siendo independientes de este límite de contenido.
-
-Rutas con espacios y variables:
+El árbol identifica cada miembro por separado y propaga al contenedor los avisos de revisión o de alcance incompleto. Para profundizar en anidados:
 
 ```bash
-archivo="./mis archivos/imagen.bin"
-./file_magic_number "$archivo"
+file_magic_number --max-depth 3 --max-members 100 --timeout 60 "entrega.zip"
 ```
 
-Nombres que empiezan por guion:
+### 3. Revisar documentos y paquetes
 
 ```bash
-./file_magic_number -- -archivo.bin
+file_magic_number "documento.docx"
+file_magic_number "presentacion.pptm"
+file_magic_number "aplicacion.apk"
+file_magic_number "aplicacion.jar"
 ```
 
-Ayuda y versión:
+Se reconocen estructuras compatibles y se inspeccionan miembros cuando es posible. Encontrar `word/vbaProject.bin` señala un componente potencial de macros; no verifica ni extrae sus instrucciones. Los bytes binarios de Android/Java no se decompilan.
+
+### 4. Recorrer un respaldo comprimido
 
 ```bash
-./file_magic_number --help
-./file_magic_number --version
+file_magic_number "respaldo.tar.gz"
+file_magic_number "codigo.php.gz"
 ```
 
-## Cuando file solo dice ASCII text
+GZIP/BZIP2/XZ producen un miembro virtual con el contenido descomprimido. En `tar.gz`, la capa comprimida y el TAR consumen dos niveles; el límite predeterminado permite analizar los archivos regulares de ese TAR.
 
-Para un archivo que contiene un salto de línea y `<?= $nombre ?>`, el análisis de contenido puede producir:
+### 5. Comparar contra un MIME esperado
+
+```bash
+file_magic_number --expect 'image/*' "subida.png"
+file_magic_number --expect application/pdf "curriculum.pdf"
+```
+
+La comparación usa el MIME **detectado localmente** por libmagic y se aplica solo a los archivos raíz. No recibe ni verifica el `Content-Type` HTTP enviado al servidor. Tampoco reproduce la política de subida o ejecución de la aplicación.
+
+### 6. Revisar varios archivos por terminal
+
+```bash
+file_magic_number "foto.png" "documento.pdf" "paquete.zip"
+file_magic_number ./muestras/*.zip
+```
+
+Acepta hasta 100 rutas de archivo por lote; los presupuestos de miembros, bytes y tiempo se comparten. No recorre carpetas del sistema automáticamente.
+
+## Salida y colores
+
+La terminal muestra secciones **ARCHIVO**, tipo/MIME, evidencias, miembros indentados y **RESUMEN**. Un ejemplo resumido del árbol:
 
 ```text
-Tipo orientativo: código PHP probable (.php)
-MIME detectado: text/plain
-Resultado: CONTENIDO PROBABLE: clasificación por texto/sintaxis; sin firma binaria única corroborante.
-Estructura básica: no implementada para esta familia
-Magic: sin coincidencias entre las 259 reglas de la base.
-Muestra de contenido: 16/16 bytes | codificación: UTF-8/ASCII
-Contenido: PHP | probable | documento | byte 1 | apertura <?= y tokens de código
-Alcance: identifica tipos probables; no garantiza validez completa ni seguridad.
+ARCHIVO · entrega.zip  [REVISAR]
+  Tipo     contenedor ZIP; subtipo no determinado por la firma
+  MIME     application/zip
+  Contenedor ZIP
+
+  ↳ imagen.jpg  [REVISAR]
+    Tipo     código PHP probable (.php)
+    MIME     text/plain
+    ! Extensión .jpg y MIME text/plain no concuerdan según la tabla...
+    • Contenido: PHP | probable | documento | byte 1 | apertura <?= y tokens de código
 ```
 
-`text/plain` describe la detección original de libmagic. La nueva capa reconoce los indicadores de PHP por separado; no inventa un magic number binario para PHP ni cambia artificialmente el MIME que devolvió `file`.
+| Indicador | Color habitual | Interpretación |
+| --- | --- | --- |
+| `CONCORDANTE` | Verde | MIME y firma compatibles; no significa que el archivo sea seguro. |
+| `PARCIAL` | Amarillo | Identificación parcial, contenido probable o alcance limitado. |
+| `REVISAR` | Rojo | Discrepancias, contenido adicional o miembros que requieren revisión. |
+| `ERROR` | Rojo | Fallo técnico o archivo no accesible. |
 
-## Lenguajes, datos y contenido mixto
+Los colores se activan automáticamente con una salida TTY. Se omiten al redirigir, con `NO_COLOR` o con `TERM=dumb`. Los nombres con controles ANSI, saltos de línea o marcas de dirección de texto se muestran escapados.
 
-| Contenido | Evidencia utilizada |
-| --- | --- |
-| PHP | Aperturas `<?php`/`<?=` y tokens del bloque; contempla saltos de línea, BOM y texto alrededor. |
-| Python | Construcciones distintivas, shebang y, cuando el tamaño lo permite, análisis mediante `ast.parse`. |
-| JavaScript / TypeScript | Combinaciones de construcciones, anotaciones de tipos, shebang o bloques `<script>`. La sintaxis compartida puede dejar ambas opciones abiertas. |
-| Shell | Shebang o estructuras de control características. |
-| HTML | Etiquetas del documento y elementos emparejados; distingue scripts de JavaScript, datos JSON y estilos. |
-| XML / SVG | Parser XML para documentos pequeños sin DTD/ENTITY; también puede reconocer plantillas tras separar bloques PHP. |
-| JSON | Parser estricto para objetos/arrays pequeños y completos; no acepta `NaN` como JSON válido. |
-| SQL, CSS, C/C++ | Combinaciones de patrones propios de cada familia. |
-| Markdown | Encabezados y bloques de ejemplo delimitados por tres acentos graves. |
-
-Los shebang indican un intérprete declarado, no que el cuerpo sea válido. `ast.parse` permite reconocer una estructura de Python sin ejecutar el código; no valida todos los aspectos de alcance, tipos o comportamiento. El formato/lenguaje del archivo no se elige por la extensión.
-
-### Separar el archivo de sus fragmentos
-
-- Una plantilla puede mostrar **HTML + PHP + JavaScript** como capas distintas.
-- Un objeto JSON con un ejemplo `<?php ... ?>` conserva la identificación JSON; el marcador PHP se presenta como texto citado.
-- También se contemplan contextos citados en Python, JavaScript, shell y ejemplos Markdown. Son reglas conservadoras, no un analizador universal de todas las cadenas o comentarios.
-- Si un PNG contiene pistas de PHP o código en una cadena legible, se conserva **imagen PNG** como formato y se informa el fragmento por separado. Esto no demuestra que sea un políglota ejecutable ni que el fragmento sea malicioso.
-- La salida informa etiquetas y evidencias, sin imprimir automáticamente el código fuente encontrado. `--verbose` sigue mostrando la cabecera hexadecimal solicitada.
-
-### Alcance del análisis de contenido
-
-La muestra predeterminada es **1 MiB**, ampliable hasta **16 MiB**. Los marcadores PHP se buscan en toda la muestra, con un máximo de 64 bloques y hasta 64 KiB por bloque. Las reglas generales de lenguajes y los parsers trabajan en una ventana de hasta **131072 caracteres**; el parseo completo solo se intenta si el documento completo cabe en esa ventana y no se cortó la muestra.
-
-Se reconocen UTF-8/ASCII, BOM de UTF-8/UTF-16/UTF-32 y algunos casos de UTF-16 sin BOM por la distribución de ceros. Detectar PHP representado en UTF-16 no significa que un servidor PHP vaya a interpretarlo directamente como código ejecutable.
-
-En formatos binarios se examinan además hasta **16 cadenas legibles**, de hasta **16 KiB** cada una, dentro de la muestra. Sus coincidencias son pistas de contenido posible, no una reclasificación del contenedor. No se descomprimen archivos ni se inspecciona cada miembro de un ZIP.
-
-El analizador de contenido tiene límites de CPU, memoria y tiempo: 5 segundos de CPU, 384 MiB de memoria virtual y un límite externo de 8 segundos antes de solicitar su terminación (con un segundo de margen antes de forzarla). No ejecuta ni importa el archivo analizado. Si no termina dentro de los límites, el comando informa un error en lugar de presentar una identificación completa.
-
-## Flujo de identificación
-
-```mermaid
-flowchart TD
-    A["Archivo"] --> B["Firmas y offsets"]
-    A --> C["MIME con file/libmagic"]
-    A --> D["Texto, codificación y pistas de lenguajes"]
-    B --> E["Formato exterior y contenido por separado"]
-    C --> E
-    D --> E
-    E --> F{"¿Qué evidencia hay?"}
-    F -->|Compatible| G["Concordancia o contenido probable"]
-    F -->|Insuficiente o mixta| H["Ambigüedad, revisión o desconocido"]
+```bash
+file_magic_number --color always "archivo.zip"
+file_magic_number --no-color "archivo.zip"
 ```
 
-Se leen inicialmente hasta **4096 bytes**. Para las reglas situadas más lejos o relativas al final, se consultan los rangos correspondientes sin cargar el archivo completo en memoria. El modo detallado solo muestra los primeros 32 bytes como resumen; esa no es la extensión total del análisis.
+`--verbose` muestra más evidencia: firmas y offsets, cabecera hexadecimal, descripción de `file`, comprobaciones de estructura y notas del analizador. No amplía por sí solo la muestra.
 
-## Cómo interpretar la salida
+## Opciones y límites
 
-| Resultado | Qué significa |
+```bash
+file_magic_number --help
+```
+
+| Opción | Predeterminado | Alcance |
+| --- | --- | --- |
+| `--max-depth N` | `2` | Hasta 5 niveles. Raíz = 0; `0` omite interiores. |
+| `--no-archives` | Desactivado | Identifica el contenedor sin recorrer miembros; se informa como incompleto. |
+| `--max-members N` | `50` | Entradas globales, incluidos directorios; máximo 1000. |
+| `--max-member-mib N` | `8` | Máximo descomprimido por miembro; hasta 64 MiB. |
+| `--max-total-mib N` | `64` | Presupuesto global descomprimido; hasta 256 MiB. Los anidados consumen presupuesto de nuevo en cada capa. |
+| `--max-ratio N` | `200` | Relación máxima entre bytes descomprimidos y comprimidos; hasta 1000. Superarlo no prueba que exista una bomba. |
+| `--timeout N` | `30` | Segundos de tiempo total para el lote; hasta 120. |
+| `--max-bytes N` | `1048576` | Muestra de contenido por archivo; entre 4096 y 16777216 bytes. No sustituye los límites de descompresión. |
+| `--expect MIME` | Ninguno | Compara MIME local de las raíces con un valor, o con `image/*`, por ejemplo. |
+| `--color auto/always/never` | `auto` | Control de colores; `--no-color` equivale a `never`. |
+
+Antes de abrir el directorio ZIP se comprueban límites de **10000 entradas y 8 MiB de metadatos**. Se omiten directorios ZIP64/multipartes y contenedores mayores de **512 MiB**. El parser TAR tiene además un presupuesto de lectura para impedir solicitudes de metadatos desmedidas.
+
+Las cifras de `omitidos registrados` cuentan miembros omitidos explícitamente; una interrupción de profundidad, tiempo o metadatos puede dejar otros sin enumerar. El resumen indica **INCOMPLETO** cuando se conoce una limitación. Aun sin ese aviso, solo se aplicaron las firmas, muestras y parsers descritos aquí.
+
+## Manejo de contenedores
+
+| Formato | Inspección |
 | --- | --- |
-| `CONCORDANTE` | Una familia con firma de al menos cuatro bytes fijos concuerda con uno de sus MIME compatibles y no fallaron las comprobaciones básicas disponibles. |
-| `CONCORDANTE EN FAMILIA` | Se reconoce el contenedor o familia. El MIME propone un tipo compatible, pero la firma no distingue el subtipo. |
-| `EVIDENCIA PARCIAL` | Firma corta, cabecera insuficiente, MIME sin corroboración o comprobación básica fallida. |
-| `SOLO MIME` | Libmagic propone un tipo, pero esta base no encontró una firma que lo corrobore. Es habitual con texto o código fuente. |
-| `CONTENIDO PROBABLE` | La nueva capa reconoce un lenguaje o estructura textual aunque libmagic no lo identifique con precisión. |
-| `REVISAR CONTENIDO` | Hay posibles fragmentos de código en un formato binario o pistas ambiguas de varios lenguajes. No significa automáticamente malware. |
-| `CONTRADICCIÓN` | El MIME y una firma apuntan a familias incompatibles según los alias mantenidos en la tabla. Puede requerir revisar el archivo o los alias de la base. |
-| `AMBIGUO` | Varias firmas de familias distintas coinciden o una firma es conocida por ser compartida. No se fuerza un único resultado. |
-| `DESCONOCIDO` / `SIN EVIDENCIA` | No hay suficientes pistas para identificar un formato o el archivo está vacío. |
+| ZIP | Directorio y archivos regulares no cifrados con métodos soportados por la biblioteca estándar instalada; CRC al terminar la lectura del miembro. |
+| DOCX/XLSX/PPTX, variantes con macros, JAR/APK/EPUB | Recorrido ZIP y marcadores de estructura; no se certifica el formato completo. |
+| TAR | Archivos regulares; no se siguen enlaces ni se materializan dispositivos, FIFO o archivos sparse. |
+| GZIP/BZIP2/XZ | Descompresión acotada y análisis del miembro virtual; puede revelar otro contenedor. |
+| RAR, 7z, Zstd y OLE/Office antiguo | Identificación exterior cuando es posible, sin inspección interna en esta versión. Se marca esa limitación. |
 
-Las firmas cortas pueden ser auténticas: un GZIP puede quedar como evidencia parcial porque su regla tiene dos bytes fijos. Ese resultado conservador no significa que sea malicioso o inválido. Las familias sin alias MIME mantenidos se muestran como candidatas por firma, sin inventar una corroboración.
+No se utilizan `extract`/`extractall` para escribir miembros en sus rutas. Los archivos regulares permitidos se leen a copias temporales dentro de una carpeta privada, con nombres controlados por el programa, y se eliminan al terminar normalmente. Los originales no se modifican. No se ejecutan miembros, macros, comandos encontrados ni conexiones de relaciones externas.
 
-**Un MIME reconocido no evita la comparación de firmas.** Del mismo modo, encontrar una firma no anula una contradicción del MIME.
+Una estructura ZIP válida tras una cabecera distinta se señala como posible contenido concatenado o autoextraíble. No basta para certificar un políglota. Los cifrados, errores de lectura, métodos no soportados, CRC incorrectos y límites agotados quedan visibles; no se presentan como contenido limpio.
 
-### Firmas compartidas y contenedores
+## Capas de identificación conservadas
 
-- `50 4B 03 04` corresponde a un contenedor ZIP, utilizado también por formatos como DOCX, JAR y APK. No se elige un subtipo por el nombre del archivo.
-- `D0 CF 11 E0 A1 B1 1A E1` identifica la familia OLE/CFB; no significa automáticamente que sea un documento Word.
-- `CA FE BA BE` puede corresponder a Java class o Mach-O universal: el resultado permanece ambiguo.
-- El texto plano y el código PHP no tienen una firma binaria universal que confirme su formato en todos los casos.
+1. `file`/libmagic detecta un MIME y una descripción.
+2. La tabla local compara firmas con posiciones y comodines: **259 reglas para 201 familias**.
+3. El analizador de contenido busca indicadores de lenguajes y estructuras, sin confiar en el nombre.
+4. Los parsers de contenedores contextualizan el contenido y aplican presupuestos compartidos.
+
+PHP puede reconocerse con `<?php` y `<?=`, incluso tras saltos de línea o BOM. Se distinguen, de manera heurística, ejemplos citados en JSON, Markdown y algunos lenguajes de programación. Se mantienen las pistas de Python, JavaScript/TypeScript, Shell, HTML, XML/SVG, JSON, SQL, CSS y C/C++.
+
+La muestra predeterminada es 1 MiB. Los marcadores PHP se buscan en esa muestra con un máximo de 64 bloques y hasta 64 KiB por bloque. Los lenguajes generales y parsers usan una ventana de hasta 131072 caracteres; el parseo completo requiere que el documento quepa y que no se haya cortado la muestra. En binarios se examinan además hasta 16 cadenas legibles de hasta 16 KiB cada una. Los offsets corresponden al archivo o miembro que muestra la sección, no a una posición física equivalente dentro del ZIP comprimido.
+
+Hay comprobaciones básicas de inicio/cierre PNG y cierre EOI JPEG; no se verifican todos los CRC de imagen, segmentos o píxeles. `ast.parse` no ejecuta el código Python ni valida todos los aspectos semánticos. Las relaciones XML se analizan hasta 128 KiB, con DTD deshabilitadas, también cuando están codificadas en UTF-16. Si se supera ese límite o no se puede parsear el documento, la comprobación se marca como omitida.
+
+El proceso principal limita su memoria virtual a 512 MiB y el analizador de contenido a 384 MiB y hasta 5 segundos de CPU/8 segundos de espera externa. Se respetan límites heredados más estrictos. Estos son controles de recursos, no una garantía de aislamiento frente a vulnerabilidades de los parsers instalados.
 
 ## Códigos de salida
 
 | Código | Significado |
 | --- | --- |
-| `0` | MIME y firma compatibles, a nivel de formato o de familia. |
-| `1` | Evidencia parcial, contenido textual probable, solo MIME, archivo vacío o formato desconocido. |
-| `2` | Error de argumentos, dependencia, lectura o base de datos. |
-| `3` | Contradicción, ambigüedad o contenido adicional que requiere revisión. |
+| `0` | Evidencia concordante dentro de los controles aplicados. No certifica seguridad. |
+| `1` | Evidencia parcial, contenido textual probable, formato desconocido u omisiones/límites. |
+| `2` | Error de uso, dependencia, lectura o análisis técnico. Tiene prioridad si el lote también contiene avisos. |
+| `3` | Elementos para revisar: discrepancias, rutas problemáticas, indicadores o ambigüedad. No significa automáticamente malware. |
 
-**Cambio respecto a v1:** reconocer solamente el MIME o una firma ya no devuelve necesariamente `0`. No uses estos códigos como autorización para ejecutar, abrir o aceptar automáticamente una subida.
+El código agregado contempla los miembros. Una coincidencia de PHP en los bytes de un TAR/ZIP válido puede corresponder simplemente a un archivo fuente empaquetado: se conserva la evidencia y se contextualiza por miembro, en lugar de declararlo automáticamente un políglota.
 
-La detección textual puede ser útil y correcta aunque devuelva `1`: PHP probable sigue siendo una hipótesis basada en contenido, sin una firma binaria universal. El código `0` conserva el significado de compatibilidad MIME/firma y no excluye contenido adicional que el muestreo no haya encontrado.
+## Procedencia y mantenimiento
 
-## Procedencia de las firmas
+La tabla se deriva de [TheDiscordian/magic-bytes](https://github.com/TheDiscordian/magic-bytes), revisión [`26e7a9bd21d6b9d08740fb91b4a0f49754daacdb`](https://github.com/TheDiscordian/magic-bytes/tree/26e7a9bd21d6b9d08740fb91b4a0f49754daacdb), con licencia MIT. Se conservan los datos originales, su licencia, hashes y un informe del proceso de importación; este último describe la base de firmas, no genera resultados de análisis de tus archivos.
 
-La base pública elegida es [TheDiscordian/magic-bytes](https://github.com/TheDiscordian/magic-bytes), revisión [`26e7a9bd21d6b9d08740fb91b4a0f49754daacdb`](https://github.com/TheDiscordian/magic-bytes/tree/26e7a9bd21d6b9d08740fb91b4a0f49754daacdb). El proyecto original declara basarse en una lista pública de firmas de archivos.
-
-| Archivo | Contenido |
+| Archivo | Función |
 | --- | --- |
-| `data/upstream/rows_map.json` | Datos originales de firmas y continuaciones. |
-| `data/upstream/offset_list.json` | Firmas originales con offsets absolutos o relativos al final. |
-| `data/upstream/source.json` | Revisión, hashes SHA-256 y hashes de blobs de origen. |
-| `data/upstream/LICENSE` | Licencia MIT de la base incorporada. |
-| `data/signatures.tsv` | Reglas normalizadas que consume Bash. |
-| `data/import-report.json` | Reglas/familias resultantes y entradas excluidas con sus motivos. |
-| `tools/build_signatures.py` | Conversión reproducible de JSON a TSV, etiquetas, alias MIME y correcciones locales. |
-| `lib/content_probe.py` | Decodificación, parsers pasivos y reglas de contenido/lenguajes, independientes de la extensión. |
-
-La conversión conserva las continuaciones como patrones con comodines, elimina marcas triviales y corrige la presentación de firmas compartidas. Las adiciones locales explícitas incluyen el marcador genérico JPEG y la familia ISO BMFF. Los alias MIME y tamaños mínimos son metadatos mantenidos por este proyecto, no una afirmación de que el dataset original valide esos formatos.
-
-No se descarga ni ejecuta código remoto durante el análisis. La copia local permite resultados reproducibles y funcionamiento sin Internet. No se promete que la base contenga todos los formatos ni que todas sus entradas sean perfectas.
-
-### Reconstruir la tabla
-
-Para mantenimiento o desarrollo se necesita **Python 3** con su biblioteca estándar:
+| `file_magic_number` | Entrada Bash pública, compatible con el enlace de `/usr/local/bin`. |
+| `lib/terminal_scan.py` | Terminal, presupuestos, nombres y contenedores. |
+| `lib/file_probe.sh` | Motor interno de MIME, firmas y comprobaciones básicas. |
+| `lib/content_probe.py` | Reconocimiento pasivo de contenido y lenguajes. |
+| `data/signatures.tsv` | Reglas locales normalizadas. |
+| `data/upstream/` | Fuentes originales, licencia y procedencia. |
+| `tools/build_signatures.py` | Reconstrucción reproducible de la tabla. |
 
 ```bash
 python3 tools/build_signatures.py
-```
-
-El generador verifica los SHA-256 de las fuentes locales antes de generar la tabla. No descarga datos. Para adoptar una nueva revisión externa, revisa sus archivos y licencia, actualiza las fuentes y su procedencia y vuelve a generar y probar; no basta con cambiar el hash de revisión.
-
-Para recibir las actualizaciones publicadas en este repositorio, usa `git pull --ff-only`. Mantén también actualizado el paquete `file` de tu distribución: su base libmagic es una fuente distinta de la tabla incorporada.
-
-## Pruebas
-
-```bash
 bash -n file_magic_number
-python3 tests/test_detector.py
+bash -n lib/file_probe.sh
+python3 -m unittest discover -s tests -v
 ```
 
-Las **77 pruebas** generan archivos temporales y comprueban PNG renombrados, cabeceras falsas o truncadas, contradicciones MIME simuladas, firmas compartidas, ZIP, SQLite, ELF, TAR, comodines RIFF, offsets de DICOM/ISO/DMG, texto, vacíos, nombres especiales, enlaces y bases inválidas. También verifican PHP corto con MIME genérico, BOM/UTF-16/UTF-32, fragmentos posteriores a la cabecera, lenguajes mixtos, código citado, parsers, límites de muestra y que los ejemplos de código no se ejecuten. No necesitan Internet ni dependencias Python externas. Son pruebas de comportamiento, no una medición estadística de precisión sobre todos los formatos y lenguajes.
+Las pruebas cubren el motor de identificación y la CLI pública: anidados, rutas problemáticas, enlaces, cifrados, nombres duplicados, archivos dañados, límites de lectura/descompresión/tiempo, marcadores de paquetes, colores, controles de terminal y limpieza temporal. No requieren conexión ni paquetes Python externos. Verifican comportamientos; no representan una medición universal de precisión.
 
-## Límites de fiabilidad
+## Uso e interpretación en pentest
 
-La concordancia es evidencia de identificación, **no una certificación de integridad o seguridad**. Libmagic también usa firmas: combinar ambas fuentes no las convierte en pruebas estadísticamente independientes ni justifica un porcentaje de certeza.
+Utiliza los resultados para decidir qué archivo o comportamiento del servidor revisar después: validación de subidas, manejo de nombres, procesamiento de documentos, extracción de contenedores o contenido activo inesperado. El programa hace análisis local; no prueba endpoints, no confirma ejecución remota y no reemplaza analizadores de macros, decompiladores o validadores completos.
 
-Las comprobaciones básicas actuales para imágenes son limitadas: PNG exige un primer IHDR de longitud 13 y un IEND al final, y JPEG comprueba un cierre EOI final. No se verifican todos los CRC, segmentos, tamaños internos o píxeles. Un JPEG con datos legítimos añadidos tras EOI puede quedar como parcial. Para las demás familias se informa que no se implementó una comprobación estructural adicional.
+La ausencia de hallazgos no demuestra ausencia de código o de vulnerabilidades. Las firmas y reglas pueden tener errores, los lenguajes pueden ser ambiguos y un archivo puede contener datos fuera de los límites. MIME y firmas tampoco constituyen pruebas estadísticamente independientes.
 
-Las reglas de lenguajes son heurísticas limitadas. Pueden confundir ejemplos, código incompleto o lenguajes de sintaxis parecida, y no reconocen todos los lenguajes o dialectos. Encontrar tokens de código en una cadena no determina qué intérprete utilizará un servidor.
-
-Los archivos políglotas, contenido incrustado, datos cifrados y estructuras falsificadas pueden requerir herramientas especializadas. El script no busca todas las firmas binarias arbitrarias en cada byte, no descomprime contenedores, no garantiza descubrir un políglota y no es un antivirus ni un validador de subidas.
-
-## Referencias adicionales
-
-- [Documentación de file/libmagic](https://github.com/file/file/blob/master/doc/file.man)
-- [Especificación PNG — firma y estructura](https://www.w3.org/TR/png-3/)
-- [GCK File Signatures — SEARCH](https://filesig.search.org/)
-- [Etiquetas PHP, incluida la apertura corta de echo](https://www.php.net/manual/en/language.basic-syntax.phptags.php)
-- [Análisis AST de Python](https://docs.python.org/3/library/ast.html)
-- [Parser JSON de Python](https://docs.python.org/3/library/json.html)
+Referencias: [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html), [file/libmagic](https://github.com/file/file/blob/master/doc/file.man), [ZIP](https://docs.python.org/3/library/zipfile.html), [TAR](https://docs.python.org/3/library/tarfile.html), [etiquetas PHP](https://www.php.net/manual/en/language.basic-syntax.phptags.php).
