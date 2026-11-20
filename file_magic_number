@@ -8,13 +8,15 @@ export LC_ALL=C
 fail() { printf 'Error: %s\n' "$*" >&2; exit 2; }
 usage() {
     cat <<EOF
-Uso: ${0##*/} [-v|--verbose] [--] ARCHIVO
+Uso: ${0##*/} [-v|--verbose] [--max-bytes N] [--] ARCHIVO
 
 Contrasta SIEMPRE el MIME de file/libmagic con una base independiente de
 magic numbers. Comprueba offsets y comodines; no confía en el nombre.
+Analiza también el texto y posibles fragmentos de código incrustados.
 
   -v, --verbose  Muestra todas las coincidencias y los primeros 32 bytes.
   -h, --help     Muestra esta ayuda.
+  --max-bytes N  Límite de muestra para contenido (predeterminado: 1048576).
   --version     Muestra la versión.
   --            Permite nombres que empiezan por '-'.
 
@@ -26,17 +28,24 @@ Ejemplos:
 Códigos: 0 = MIME y firma compatibles; 1 = evidencia parcial o desconocido;
          2 = error de uso/lectura/base; 3 = contradicción o ambigüedad.
 El código 0 NO garantiza integridad, validez completa ni seguridad.
-Conserva data/ junto al script. Funciona sin Internet, con Bash >= 4.4.
+Conserva data/ y lib/ junto al script. Requiere Bash >= 4.4 y Python >= 3.9.
 EOF
 }
 
 (( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4) )) || fail 'Se requiere Bash 4.4 o superior.'
 verbose=false
+content_limit=1048576
 while (( $# )); do
     case "$1" in
         -v|--verbose) verbose=true; shift ;;
         -h|--help) usage; exit 0 ;;
-        --version) printf 'file_magic_number 2.0.0\n'; exit 0 ;;
+        --version) printf 'file_magic_number 3.0.0\n'; exit 0 ;;
+        --max-bytes)
+            (( $# >= 2 )) || fail 'Falta N después de --max-bytes.'
+            [[ "$2" =~ ^[0-9]{1,8}$ ]] || fail '--max-bytes requiere un número decimal.'
+            content_limit=$((10#$2))
+            (( content_limit >= 4096 && content_limit <= 16777216 )) || fail '--max-bytes debe estar entre 4096 y 16777216.'
+            shift 2 ;;
         --) shift; break ;;
         -*) fail "Opción desconocida: $1. Usa -- antes de un nombre con guion." ;;
         *) break ;;
@@ -44,13 +53,15 @@ while (( $# )); do
 done
 if (( $# != 1 )); then usage >&2; exit 2; fi
 
-for dependency in file od tr stat readlink dirname; do
-    command -v "$dependency" >/dev/null 2>&1 || fail "Falta '$dependency' (instala file y coreutils)."
+for dependency in file od tr stat readlink dirname python3 timeout; do
+    command -v "$dependency" >/dev/null 2>&1 || fail "Falta '$dependency' (instala file, coreutils y Python 3)."
 done
 script_path=$(readlink -f -- "${BASH_SOURCE[0]}") || fail 'No se pudo resolver la ruta del script.'
 script_dir=$(dirname -- "$script_path")
 database="$script_dir/data/signatures.tsv"
 [[ -r "$database" ]] || fail 'Falta data/signatures.tsv. Descarga o clona el repositorio completo.'
+content_helper="$script_dir/lib/content_probe.py"
+[[ -r "$content_helper" ]] || fail 'Falta lib/content_probe.py. Descarga o actualiza el repositorio completo.'
 
 path=$1
 [[ "$path" == /* ]] || path="./$path"
@@ -200,6 +211,51 @@ if [[ "$sanity" == falló:* ]]; then
     fi
 fi
 
+# The textual layer supplements binary evidence; it must never replace an image,
+# container or executable with the language of one of its strings.
+binary_container=0
+if [[ -n "$selected" ]]; then
+    case "$selected" in xml|svg|rtf|eml|srt) ;; *) binary_container=1 ;; esac
+elif [[ "$mime" == image/* || "$mime" == audio/* || "$mime" == video/* || "$mime" == application/pdf || "$mime" == application/zip ]]; then
+    [[ "$mime" == image/svg+xml ]] || binary_container=1
+fi
+content_report=$(timeout --signal=TERM --kill-after=1s 8s python3 -I "$content_helper" \
+    --max-bytes "$content_limit" --binary-container "$binary_container" -- "$path") ||
+    fail 'No se pudo completar el análisis de contenido dentro de sus límites.'
+content_kind=''
+content_primary='-'
+content_encoding=''
+sampled_bytes=0
+content_total=0
+content_alert=0
+content_ambiguous=0
+declare -a content_lines=() content_notes=()
+while IFS=$'\t' read -r field a b c d e f; do
+    case "$field" in
+        META) content_kind=$a; content_encoding=$b; sampled_bytes=$c; content_total=$d ;;
+        PRIMARY) content_primary=$a ;;
+        ALERT) content_alert=$a; content_ambiguous=$b ;;
+        FINDING) content_lines+=("Contenido: $b | $c | $d | byte $e | $f") ;;
+        NOTE) content_notes+=("Nota de contenido: $a") ;;
+        *) fail 'Respuesta no reconocida del analizador de contenido.' ;;
+    esac
+done <<< "$content_report"
+[[ -n "$content_kind" ]] || fail 'El analizador de contenido no devolvió su informe.'
+if [[ "$content_kind" == texto && "$binary_container" == 0 && "$content_primary" != '-' ]]; then
+    if (( status != 3 )); then
+        type_label=$content_primary
+        if [[ -z "$selected" ]]; then
+            status=1
+            verdict='CONTENIDO PROBABLE: clasificación por texto/sintaxis; sin firma binaria única corroborante.'
+        fi
+    fi
+fi
+if [[ "$content_alert" == 1 || "$content_ambiguous" == 1 ]]; then
+    if (( status != 3 )); then
+        verdict='REVISAR CONTENIDO: posibles fragmentos incrustados o lenguajes ambiguos; consulta las evidencias.'
+        status=3
+    fi
+fi
 if (( size == 0 )); then type_label='archivo vacío'; verdict='SIN EVIDENCIA: no hay bytes para identificar un formato.'; fi
 printf 'Tipo orientativo: %s\n' "$type_label"
 if [[ -n "$selected" ]]; then printf 'Extensiones de la familia: %s\n' "${extnames[$selected]}"; fi
@@ -218,6 +274,8 @@ done
 (( count > 0 )) || printf 'Magic: sin coincidencias entre las %s reglas de la base.\n' "$rules"
 if (( count > 8 )) && [[ "$verbose" == false ]]; then printf 'Hay %s coincidencias; usa --verbose para verlas todas.\n' "$count"; fi
 
+printf 'Muestra de contenido: %s/%s bytes | codificación: %s\n' "$sampled_bytes" "$content_total" "$content_encoding"
+for content_line in "${content_lines[@]}" "${content_notes[@]}"; do printf '%s\n' "$content_line"; done
 printf 'Alcance: identifica tipos probables; no garantiza validez completa ni seguridad.\n'
 if [[ "$verbose" == true ]]; then
     printf 'Descripción de file: %s\n' "$description"
